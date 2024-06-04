@@ -4,13 +4,14 @@ import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
 import MonetizationOnOutlinedIcon from "@mui/icons-material/MonetizationOnOutlined";
+import { useEffect, useState } from "react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../../firebase"
 
 const Widget = ({ type }) => {
+  const [amount, setAmount] = useState(null)
+  const [diff, setDiff] = useState(null)
   let data;
-
-  //temporary
-  const amount = 100;
-  const diff = 20;
 
   switch (type) {
     case "user":
@@ -77,6 +78,40 @@ const Widget = ({ type }) => {
     default:
       break;
   }
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const today = new Date();
+      console.log(today.getMonth() - 2);
+      const lastMonth = new Date(new Date().setMonth(today.getMonth() - 1));
+      const prevMonth = new Date(new Date().setMonth(today.getMonth() - 2));
+      console.log("lastMonth",lastMonth);
+      console.log("prevMonth",prevMonth);
+      
+      const lastMonthQuery = query(
+        collection(db,"users"), 
+        where("timeStamp", "<=", today), 
+        where("timeStamp", ">", lastMonth)
+      );
+      const prevMonthQuery = query(
+        collection(db,"users"), 
+        where("timeStamp", "<=", lastMonth), 
+        where("timeStamp", ">", prevMonth)
+      );
+      console.log("prevMonthQuery",prevMonthQuery);
+      console.log("lastMonthQuery",lastMonthQuery);
+      const lastMonthData = await getDocs(lastMonthQuery);
+      const prevMonthData = await getDocs(prevMonthQuery);
+      setAmount(lastMonthData.docs.length);
+      if (prevMonthData.docs.length > 0) {
+        setDiff((lastMonthData.docs.length - prevMonthData.docs.length) / (prevMonthData.docs.length) * 100);
+      } else {
+        // Handle the case where there are no users in the previous month
+        setDiff(100); // This is an arbitrary choice, you can set it based on your requirements
+      }
+    }
+    fetchData();
+  }, []);
 
   return (
     <div className="widget">
