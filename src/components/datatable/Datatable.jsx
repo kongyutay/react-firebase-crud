@@ -10,19 +10,38 @@ const Datatable = () => {
   const [data, setData] = useState([]);
 
   useEffect(()=> {
-    const fetchData = async () => {
-      let list = [];
-      try {
-          const querySnapshot = await getDocs(collection(db, "users"));
-          querySnapshot.forEach((doc) => {
-            list.push({id: doc.id, ...doc.data()});
-          });
-          setData(list);
-        } catch(err) {
-          console.log(err);
-        };
+    // const fetchData = async () => {
+    //   let list = [];
+    //   try {
+    //       const querySnapshot = await getDocs(collection(db, "users"));
+    //       querySnapshot.forEach((doc) => {
+    //         list.push({id: doc.id, ...doc.data()});
+    //       });
+    //       setData(list);
+    //     } catch(err) {
+    //       console.log(err);
+    //     };
+    // }
+    // fetchData();
+
+    //Use realtime databse of firebase
+    const unsub = onSnapshot(
+      collection(db, "users"), 
+      (snapShot) => {
+        let list = [];
+        snapShot.docs.forEach( doc => {
+          list.push({id:doc.id, ...doc.data()})
+        });
+        setData(list);
+      }, (error) => {
+        console.log(error);
+      }
+    );
+
+    //Write a cleanup function to prevent memory leak, we have to unsubscribe again and agian, otherwise it will listen forever
+    return () => {
+      unsub();
     }
-    fetchData();
   },[]);
 
   const handleDelete = async (id) => {
